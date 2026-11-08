@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spirit Island Elements</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 12px; font-family: system-ui, sans-serif;
+    background: #1d2420; color: #eee; -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: #9ab; margin: 18px 0 8px; }
+  button {
+    font: inherit; color: inherit; background: #34403a; border: 1px solid #4b5a52;
+    border-radius: 8px; padding: 10px 8px; cursor: pointer;
+  }
+  button.active { background: #7a6420; border-color: #e0b84a; }
+  .top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .top button { font-size: 13px; }
+
+  .keyboard { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+  .keyboard img { width: 100%; aspect-ratio: 1; object-fit: contain; cursor: pointer; }
+  .keyboard img:active { transform: scale(.9); }
+  .hint { font-size: 12px; color: #e0b84a; min-height: 16px; margin-top: 4px; }
+
+  .cur-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 18px 0 8px; }
+  .cur-head h2 { margin: 0; }
+  .energy { display: flex; align-items: center; gap: 4px; }
+  .energy button { padding: 6px 0; width: 36px; font-size: 13px; }
+  .energy b { min-width: 44px; text-align: center; font-size: 20px; color: #f0c850; }
+  .current { display: flex; flex-wrap: wrap; gap: 6px; min-height: 48px; }
+  .chip {
+    display: flex; align-items: center; gap: 2px; padding: 3px 8px 3px 3px;
+    background: #2a332e; border: 2px solid #4b5a52; border-radius: 22px; cursor: pointer; font-weight: 600;
+  }
+  .chip.perm { border-color: #e0b84a; box-shadow: 0 0 6px #e0b84a88; }
+  .chip img { width: 34px; height: 34px; }
+  .empty { color: #678; font-size: 13px; align-self: center; }
+
+  .power { background: #2a332e; border: 1px solid #4b5a52; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .power-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-weight: 700; }
+  .power-head button { padding: 2px 10px; background: none; border: none; color: #c77; font-size: 18px; }
+  .level { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-top: 1px solid #3a463f; cursor: pointer; }
+  .level.ok { background: #2f6b3a66; box-shadow: inset 4px 0 #5fd47a; }
+  .level.no { background: #6b2f2f55; box-shadow: inset 4px 0 #d45f5f; }
+  .level.used { background: #555; box-shadow: inset 4px 0 #999; opacity: .45; filter: grayscale(1); }
+  .req { display: flex; gap: 2px; flex-shrink: 0; }
+  .req span { display: flex; align-items: center; font-weight: 700; font-size: 14px; }
+  .req img { width: 24px; height: 24px; }
+  .level-text { font-size: 13px; color: #ccd; }
+  .add-power { width: 100%; }
+
+  dialog { background: #2a332e; color: #eee; border: 1px solid #4b5a52; border-radius: 12px; width: min(96vw, 480px); padding: 14px; }
+  dialog::backdrop { background: #000a; }
+  dialog input { width: 100%; font: inherit; padding: 8px; border-radius: 6px; border: 1px solid #4b5a52; background: #1d2420; color: #eee; margin-bottom: 8px; }
+  .builder { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+  .builder div { display: flex; align-items: center; justify-content: center; gap: 2px; background: #1d2420; border-radius: 8px; padding: 4px; cursor: pointer; font-weight: 700; }
+  .builder div.zero { opacity: .4; }
+  .builder img { width: 30px; height: 30px; }
+  .row { display: flex; gap: 6px; }
+  .row button { flex: 1; }
+  .draft-levels .level { cursor: default; border-top: 1px solid #3a463f; }
+  .draft-levels .level button { margin-left: auto; padding: 2px 10px; background: none; border: none; color: #c77; font-size: 18px; }
+  .small { font-size: 12px; color: #9ab; margin: 4px 0 8px; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <button id="resetGame">Reset game</button>
+  <button id="nextTurn">Next turn</button>
+  <button id="permBtn">+ Permanent</button>
+</div>
+
+<h2>Elements</h2>
+<div class="keyboard" id="keyboard"></div>
+<div class="hint" id="hint"></div>
+
+<div class="cur-head">
+  <h2>Current elements</h2>
+  <div class="energy" id="energy">
+    <button data-d="-3">−3</button><button data-d="-1">−1</button>
+    <b id="energyVal">0</b>
+    <button data-d="1">+1</button><button data-d="3">+3</button>
+  </div>
+</div>
+<div class="current" id="current"></div>
+
+<h2>Innate powers</h2>
+<div id="powers"></div>
+<button class="add-power" id="addPower">+ Add innate power</button>
+
+<dialog id="dlg">
+  <input id="pName" placeholder="Power name">
+  <div class="small">Tap elements to set a threshold (tap again to add more, long-press to clear one)</div>
+  <div class="builder" id="builder"></div>
+  <input id="lText" placeholder="Effect (optional)">
+  <div class="row"><button id="addLevel">Add threshold</button><button id="clearLevel">Clear</button></div>
+  <div class="draft-levels" id="draftLevels"></div>
+  <div class="row" style="margin-top:12px"><button id="cancel">Cancel</button><button id="save" class="active">Save power</button></div>
+</dialog>
+
+<script>
+const ELEMENTS = ['sun', 'moon', 'fire', 'air', 'water', 'earth', 'plant', 'animal'];
+const img = el => `<img src="elements-imgs/${el}.png" alt="${el}">`;
+const $ = id => document.getElementById(id);
+
+const blank = () => Object.fromEntries(ELEMENTS.map(e => [e, 0]));
+let state;
+try { state = JSON.parse(localStorage.getItem('si-state')); } catch {}
+if (!state) state = { temp: blank(), perm: blank(), powers: [] };
+state.energy ??= 0;
+let permMode = false;
+
+const save = () => { try { localStorage.setItem('si-state', JSON.stringify(state)); } catch {} };
+const total = el => state.temp[el] + state.perm[el];
+const meets = req => ELEMENTS.every(e => total(e) >= (req[e] || 0));
+const reqHtml = req => ELEMENTS.filter(e => req[e]).map(e => `<span>${req[e]}${img(e)}</span>`).join('');
+
+function render() {
+  save();
+  $('permBtn').classList.toggle('active', permMode);
+  $('energyVal').textContent = '⚡' + state.energy;
+  $('hint').textContent = permMode ? 'Tap an element to add it permanently' : '';
+
+  const chips = [];
+  for (const kind of ['perm', 'temp'])
+    for (const e of ELEMENTS)
+      if (state[kind][e]) chips.push(`<div class="chip ${kind}" data-kind="${kind}" data-el="${e}">${img(e)}×${state[kind][e]}</div>`);
+  $('current').innerHTML = chips.join('') || '<span class="empty">Tap elements above to add them</span>';
+
+  $('powers').innerHTML = state.powers.map((p, pi) => `
+    <div class="power">
+      <div class="power-head">${esc(p.name)}<button data-del="${pi}">×</button></div>
+      ${p.levels.map((l, li) => `
+        <div class="level ${l.used ? 'used' : meets(l.req) ? 'ok' : 'no'}" data-p="${pi}" data-l="${li}">
+          <div class="req">${reqHtml(l.req)}</div><div class="level-text">${esc(l.text)}</div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+$('keyboard').innerHTML = ELEMENTS.map(e => `<img src="elements-imgs/${e}.png" alt="${e}" data-el="${e}">`).join('');
+$('keyboard').onclick = ev => {
+  const el = ev.target.dataset.el;
+  if (!el) return;
+  state[permMode ? 'perm' : 'temp'][el]++;
+  permMode = false;
+  render();
+};
+
+$('current').onclick = ev => {
+  const chip = ev.target.closest('.chip');
+  if (!chip) return;
+  state[chip.dataset.kind][chip.dataset.el]--;
+  render();
+};
+
+$('powers').onclick = ev => {
+  const del = ev.target.dataset.del;
+  if (del !== undefined) {
+    if (ev.target.dataset.confirm) { state.powers.splice(del, 1); return render(); }
+    ev.target.dataset.confirm = 1; ev.target.textContent = 'Delete?';
+    return;
+  }
+  const row = ev.target.closest('.level');
+  if (!row) return;
+  const lvl = state.powers[row.dataset.p].levels[row.dataset.l];
+  lvl.used = !lvl.used;
+  render();
+};
+
+// Two-tap confirm for destructive buttons
+function confirmTap(btn, label, action) {
+  let armed = false, timer;
+  btn.onclick = () => {
+    if (!armed) { armed = true; btn.textContent = 'Tap to confirm'; timer = setTimeout(() => { armed = false; btn.textContent = label; }, 2500); return; }
+    clearTimeout(timer); armed = false; btn.textContent = label; action();
+  };
+}
+confirmTap($('resetGame'), 'Reset game', () => { state = { temp: blank(), perm: blank(), powers: [], energy: 0 }; permMode = false; render(); });
+
+$('nextTurn').onclick = () => {
+  state.temp = blank();
+  state.powers.forEach(p => p.levels.forEach(l => l.used = false));
+  render();
+};
+$('energy').onclick = ev => {
+  const d = +ev.target.dataset.d;
+  if (!d) return;
+  state.energy = Math.max(0, state.energy + d);
+  render();
+};
+$('permBtn').onclick = () => { permMode = !permMode; render(); };
+
+// --- Add power dialog ---
+let draft, draftReq;
+function renderDialog() {
+  $('builder').innerHTML = ELEMENTS.map(e => `<div data-el="${e}" class="${draftReq[e] ? '' : 'zero'}">${img(e)}${draftReq[e]}</div>`).join('');
+  $('draftLevels').innerHTML = draft.levels.map((l, i) => `
+    <div class="level"><div class="req">${reqHtml(l.req)}</div><div class="level-text">${esc(l.text)}</div><button data-i="${i}">×</button></div>`).join('');
+}
+$('addPower').onclick = () => {
+  draft = { name: '', levels: [] }; draftReq = blank();
+  $('pName').value = ''; $('lText').value = '';
+  renderDialog(); $('dlg').showModal();
+};
+let pressTimer, longPressed = false;
+$('builder').onpointerdown = ev => {
+  const el = ev.target.closest('[data-el]')?.dataset.el;
+  if (!el) return;
+  longPressed = false;
+  pressTimer = setTimeout(() => { longPressed = true; draftReq[el] = 0; renderDialog(); }, 500);
+};
+$('builder').onpointerup = $('builder').onpointerleave = () => clearTimeout(pressTimer);
+$('builder').oncontextmenu = ev => ev.preventDefault();
+$('builder').onclick = ev => {
+  const el = ev.target.closest('[data-el]')?.dataset.el;
+  if (!el || longPressed) return;
+  draftReq[el]++; renderDialog();
+};
+$('clearLevel').onclick = () => { draftReq = blank(); renderDialog(); };
+$('addLevel').onclick = () => {
+  if (!ELEMENTS.some(e => draftReq[e])) return;
+  draft.levels.push({ req: draftReq, text: $('lText').value.trim(), used: false });
+  draftReq = blank(); $('lText').value = ''; renderDialog();
+};
+$('draftLevels').onclick = ev => {
+  if (ev.target.dataset.i === undefined) return;
+  draft.levels.splice(ev.target.dataset.i, 1); renderDialog();
+};
+$('cancel').onclick = () => $('dlg').close();
+$('save').onclick = () => {
+  if (ELEMENTS.some(e => draftReq[e])) $('addLevel').onclick(); // include an unadded threshold
+  if (!draft.levels.length) return;
+  draft.name = $('pName').value.trim() || 'Innate power';
+  state.powers.push(draft);
+  $('dlg').close(); render();
+};
+
+render();
+</script>
+</body>
+</html>
